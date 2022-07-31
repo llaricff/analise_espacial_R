@@ -1,0 +1,108 @@
+---
+title: "Objetos Raster"
+output: html_notebook
+---
+
+Material retirado da aula de MBA em Data Science & Analytics, Esalq/USP. 
+Aluna: Larissa Chacon Finzeto
+
+---
+
+Objetos do tipo Raster
+
+Tratam-se de uma imagem georreferenciada. Vamos carregar um objeto raster do relevo do litoral de São Paulo.
+
+```{r}
+relevo_sp <- raster("raster_sp/relevo_sp.tif")
+
+plot(relevo_sp)
+```
+
+Vamos estabelecer um histograma para as altitudes da imagem, com recursos do R:
+
+```{r}
+hist(relevo_sp,
+     main = "",
+     xlab = "Altitudes das Formações Geográficas",
+     ylab = "Frequência",
+     col = "deepskyblue4",
+     maxpixels = 2160000)
+```
+
+Vamos plotar também utilizando o ggplot. Para isso, precisamos antes, extrair o date frame deste objeto, por meio da função as.data.frame()
+
+```{r}
+relevo_sp_df <- as.data.frame(relevo_sp, xy = TRUE)
+
+#Observar a base de dados:
+
+head(relevo_sp_df)
+min(relevo_sp_df$relevo_sp)
+max(relevo_sp_df$relevo_sp)
+
+#Construindo o gráfico com o ggplot:
+
+relevo_sp_df %>%
+  ggplot() +
+  geom_histogram(aes(x = relevo_sp), 
+                 fill = "deepskyblue4",
+                 color = "white") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Altitudes das Formações Geográficas",
+       y = "Frequência") +
+  theme_bw()
+```
+
+Outra opção de plotagem:
+
+```{r}
+image(relevo_sp,
+      xlab = "Longitude",
+      ylab = "Latitude",
+      main = "Relevo de parte do Litoral Paulista",
+      col = terrain.colors(10),
+      zlim = c(0,1650))
+```
+
+Plotagem em 3D:
+  
+Primeiro, precisamos transformar nosso objeto raster em uma matriz, para depois plotar.
+
+```{r}
+relevo_matriz <- raster_to_matrix(raster = relevo_sp, verbose = interactive())
+
+#Plotagem:
+
+relevo_matriz %>%
+  sphere_shade(texture = "imhof1") %>%
+  plot_3d(relevo_matriz, zscale = 50, theta = -45, phi = 45, water = TRUE,
+          windowsize = c(1000,800), zoom = 0.75, waterlinealpha = 0.3,
+          wateralpha = 0.5, watercolor = "lightblue", waterlinecolor = "white",
+          waterdepth = 100)
+
+```
+```{r}
+render_snapshot()
+```
+FIM ----------------------------------------------------------------------------
+  
+            
+
+
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

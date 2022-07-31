@@ -1,0 +1,206 @@
+---
+title: "Introdução à manipulação de dados em shapefiles"
+output: html_notebook
+---
+
+Material retirado da aula de MBA em Data Science & Analytics, Esalq/USP.
+Aluna: Larissa Chacon Finzeto
+
+---
+
+pacotes <- c("rgdal","raster","tmap","maptools","tidyverse","broom","knitr",
+             "kableExtra","RColorBrewer")
+
+if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
+  instalador <- pacotes[!pacotes %in% installed.packages()]
+  for(i in 1:length(instalador)) {
+    install.packages(instalador, dependencies = T)
+    break()}
+  sapply(pacotes, require, character = T) 
+} else {
+  sapply(pacotes, require, character = T) 
+}
+
+**Introdução à manipulação de dados em shapefiles**
+
+Vamos carregar um shapefile do estado de São Paulo
+
+```{r}
+shp_sp <- readOGR(dsn = "shapefile_sp", layer = "estado_sp")
+```
+
+Características básicas do objeto shp_sp
+
+```{r}
+summary(shp_sp)
+```
+
+Classe e tipo do objeto carregado
+
+```{r}
+class(shp_sp)
+typeof(shp_sp)
+```
+
+Para acessar a base de dados do shapefile, utilizaremos o operador @:
+
+```{r}
+shp_sp@data
+
+shp_sp@data %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = TRUE,
+                font_size = 16)
+```
+
+Para acessar as variáveis da base de dados atrelada ao shapefile, utilizaremos 0 $. Para outros componentes, o operador @. Exemplos:
+
+```{r}
+shp_sp$NM_MUNICIP
+shp_sp$CD_GEOCMU
+
+shp_sp@polygons #Posições geográficas dos polígonos
+shp_sp@plotOrder #Ordem de plotagem
+shp_sp@bbox #Eixo X
+shp_sp@proj4string #Sistema de projeção geográfica do shapefile
+Plotagem básica do shapefile
+
+plot(shp_sp)
+```
+
+**Manipulação de dados de um shapefile**
+
+A princípio, vamos calcular a área dos municípios do shp_sp, dos municípios paulistas, utilizando a função area()
+
+```{r}
+raster::area(shp_sp)/100000
+```
+
+E em seguida, vamos adicionar essa informação à base de dados
+
+```{r}
+shp_sp@data["area_aproximada"] <- raster::area(shp_sp)/1000000
+
+shp_sp@data %>%
+  kable () %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = TRUE,
+                font_size = 16)
+```
+
+Agora vamos carregar uma base de dados do estado de SP com outras informações e uni-la ao nosso shapefile, por meio da função merge()
+
+```{r}
+load("dados_sp.RData")
+```
+
+Observar a base de dados carregada
+
+```{r}
+dados_sp %>%
+  kable () %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = TRUE,
+                font_size = 16)
+```
+
+Combinando os dados
+
+```{r}
+shp_sp_dados <- merge(x = shp_sp,
+                      y = dados_sp,
+                      by.x = "CD_GEOCMU",
+                      by.y = "codigo")
+```
+
+Vamos plotar os dados utilizando ggplot, ggplot2 e tmap. Primeiro, utilizando o ggplot:
+
+```{r}
+shp_sp_dados@data %>%
+  ggplot() +
+  geom_histogram(aes(x = idh,),
+                     fill = "deepskyblue4",
+                     color = "white") +
+  labs(x = "IDH",
+       y = "Frequência") +
+  theme_bw()
+```
+
+Em seguida, ggplot2:
+
+```{r}
+#Passo 1: Transformar o shapefile em um objeto do tipo data frame e importar os dados que já estavam no shapefile para o novo objeto data frame 
+
+shp_dados_df <- tidy(shp_sp_dados, region = "CD_GEOCMU") %>%
+  rename(CD_GEOCMU = id) %>%
+  left_join(shp_sp_dados@data,
+            by = "CD_GEOCMU")
+  
+#Passo 2: A plotagem interativa com o pacote plotly
+plotly::ggplotly(
+shp_dados_df %>%
+  ggplot() +
+  geom_polygon(aes(x = long, y = lat, group = group, fill = idh),
+               color = "black") +
+  labs(x = "Longitude",
+       y = "Latitude",
+       fill = "IDH") +
+  scale_fill_viridis_c() +
+  theme_bw()
+)
+```
+
+Por fim, utilizando a tmap:
+
+```{r}
+tm_shape(shp = shp_sp_dados) +
+  tm_fill(col = "idh", 
+          style = "quantile", 
+          n = 4, 
+          palette = "Greens", 
+          legend.hist = TRUE) +
+  tm_layout(legend.text.size = 0.7,
+            legend.title.size = 0.9,
+            legend.hist.size= 0.5,
+            legend.hist.height = 0.2,
+            legend.hist.width = 0.3,
+            frame = FALSE,
+            main.title = "A Distribuição do IDH nos Municípios de SP") +
+  tm_borders(alpha = 0.8) +
+  tm_compass(type = "8star",
+             show.labels = 3)
+```
+
+Agora iremos mudar de shapefile para realizar as funções de ancorar um recorte à alguma base de dados. Vamos supor que queiramos construir um shapefile do Mercosul a partir de shapefiles segregados.
+
+```{r}
+#Passo 1: Carregar um shapefile de cada vez:
+
+shp_argentina <- readOGR(dsn = "shapefile_mercosul", layer = "argentina_shapefile")
+shp_brasil <- readOGR(dsn =  "shapefile_mercosul", layer = "brasil_shapefile")
+shp_paraguai <- readOGR(dsn = "shapefile_mercosul", layer = "paraguai_shapefile")
+shp_venezuela <- readOGR(dsn = "shapefile_mercosul", layer = "venezuela_shapefile")
+
+#Passo 2: Combiná-los com a função bind():
+
+shp_mercosul <- bind(shp_argentina,
+                     shp_brasil,
+                     shp_paraguai,
+                     shp_venezuela)
+
+#Passo 3: Observar a base de dados criada e plotar o shapefile criado:
+
+shp_mercosul %>%
+  kable () %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = TRUE,
+                font_size = 12)
+
+tm_shape(shp = shp_mercosul) +
+  tm_borders(lwd = 1) +
+  tm_fill(col = "mercosul") +
+  tm_layout(legend.width = 0.8)
+```
+
+FIM —————————————————————————-

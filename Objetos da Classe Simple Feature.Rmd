@@ -1,0 +1,209 @@
+---
+title: "Objetos da Classe Simple Feature"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Material retirado das aulas do MBA em Data Science & Analytics da Esalq/USP.
+Aluna: Larissa Chacon Finzeto
+
+---
+
+pacotes <- c("tidyverse","sf","tmap","rgdal","rgeos","adehabitatHR","knitr",
+             "kableExtra")
+
+if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
+  instalador <- pacotes[!pacotes %in% installed.packages()]
+  for(i in 1:length(instalador)) {
+    install.packages(instalador, dependencies = T)
+    break()}
+  sapply(pacotes, require, character = T) 
+} else {
+  sapply(pacotes, require, character = T) 
+}
+
+Objetos da Classe Simple Feature
+
+Vamos carregar uma base de dados georreferenciada dos SHOPPINGS DO MUNICÍPIOS DE SÃO PAULO e, em seguida, transformá-la em um objeto Simple Feature para podermos trabalhar de maneira espacial e modelagem de dados, utilizando o tidyverse.
+
+```{r}
+load("shoppings.RData")
+
+#Observar a classe
+class("shoppings")
+
+#Observar as variáveis do data frame
+shoppings %>%
+  kable() %>%
+  kable_styling(bootstrap_options = "striped",
+                full_width = TRUE,
+                font_size = 12)
+
+#Criando o objeto SIMPLE FEATURE a partir do data frame
+
+sf_shoppings <- st_as_sf(x = shoppings,
+                         coords = c("longitude", "latitude"),
+                         crs = 4326)
+```
+
+Vamos plotar o simple feature (sf) de maneira espacial utilizando a função tmap()
+
+```{r}
+tm_shape(shp = sf_shoppings) +
+  tm_dots(size = 1)
+```
+
+Vamos adicionar uma camada de mapa do Leafleet que considere a bounding box do sf_shoppings
+
+```{r}
+tmap_mode("view")
+
+tm_shape(sf_shoppings) +
+  tm_dots(col = "deepskyblue4",
+          border.col = "black",
+          size = 0.2,
+          alpha = 0.8)
+```
+
+Agora vamos combinar o objeto SHAPEFILE shp_saopaulo, do município de São Paulo, ao SIMPLE FEATURE Sf_shoppings
+
+```{r}
+
+shp_saopaulo <- readOGR("shapefile_municipio", "municipio_sp")
+
+#Visualização gráfica
+
+tm_shape(shp = shp_saopaulo) +
+  tm_borders()
+
+#Por fim, a combinação
+
+tm_shape(shp = shp_saopaulo) +
+  tm_borders(alpha = 0.5) +
+  tm_shape(shp = sf_shoppings) +
+  tm_dots(col = "regiao",
+          size = 0.2)
+```
+
+Vamos utilizar a técnica do Buffer Analyses para medirmos distâncias entre os shoppings da cidade de São Paulo e avaliar sua saturação
+
+Para utilizar a Buffer Analyses, devemos utilizar um Spatial Points, sob orientação Planar.
+
+Passo 1: Isolar as variáveis longitude e latitude do data frame original "shoppings"
+
+```{r}
+coordenadas_shoppings <- cbind (shoppings$longitude, shoppings$latitude)
+```
+
+Passo 2: Transformar o objeto SIMPLE FEATURE "sf_shoppings" em um SPATIAL POINT, por meio da função SpatialPoints()
+
+```{r}
+sp_shoppings <- SpatialPoints(coords = coordenadas_shoppings,
+                              proj4string = CRS("+proj=longlat"))
+```
+
+Passo 3: Passar o objeto da forma Geodésica para a Planar, por meio da função spTransform()
+
+```{r}
+shoppings_UTM <- spTransform(x = sp_shoppings,
+                             CRSobj = CRS("+init=epsg:22523"))
+```
+
+Agora podemos plotar:
+
+```{r}
+buffer_shoppings <- gBuffer(spgeom = shoppings_UTM, 
+                            width = 1500, 
+                            byid = TRUE)
+
+tmap_mode("view")
+
+tm_shape(shp = buffer_shoppings) +
+  tm_borders()
+```
+
+Combinando os objetos shp_saopaulo, sf_shoppings e buffer_shoppings:
+
+```{r}
+tm_shape(shp = shp_saopaulo) + 
+  tm_borders(alpha = 0.5) +
+  tm_shape(shp = sf_shoppings) + 
+  tm_dots(col = "regiao", 
+          size = 0.02) +
+  tm_shape(buffer_shoppings) + 
+  tm_borders(col = "black") 
+```
+
+Utilizando a função Buffer Union agora, iremos combinar aqueles outputs da técnica de buffering que, por ventura, se encontrem.
+
+```{r}
+buffer_union <- gUnaryUnion(spgeom = buffer_shoppings)
+
+
+tm_shape(shp = shp_saopaulo) + 
+  tm_borders(alpha = 0.5) +
+  tm_shape(shp = sf_shoppings) + 
+  tm_dots(col = "regiao", 
+          size = 0.02) +
+  tm_shape(shp = buffer_union) + 
+  tm_borders(col = "black") + 
+  tm_fill(col = "gray",
+          alpha = 0.5) 
+```
+
+KERNEL DENSITIES
+
+Mensura a densidade dos pontos de interesse em determinada área geográfica, por meio da função kernelUD
+
+Passo 1: Utilizaremos um objeto Spatial Points, atrelado à um data frame. 
+
+```{r}
+shoppings_sp_df <- SpatialPointsDataFrame(data = shoppings,
+                                          coords = coordenadas_shoppings,
+                                          proj4string = CRS("+proj=longlat"))
+```
+
+
+Agora, calculamos a kernel densities: 
+
+```{r}
+shoppings_dens <- kernelUD(xy = shoppings_sp_df,
+                           h = "href",
+                           grid = 1000,
+                           boundary = NULL)
+plot(shoppings_dens)
+```
+
+Estabelecendo a densidade de cada zona:
+
+```{r}
+zona1 <- getverticeshr(x = shoppings_dens, percent = 20)
+zona2 <- getverticeshr(x = shoppings_dens, percent = 40)
+zona3 <- getverticeshr(x = shoppings_dens, percent = 60)
+zona4 <- getverticeshr(x = shoppings_dens, percent = 80)
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(shp = shp_saopaulo) +
+  tm_fill(col = "gray90") +
+  tm_borders(col = "white", alpha = 0.5) +
+  tm_shape(shp = shoppings_sp_df) + 
+  tm_dots(col = "regiao", size = 0.25) + 
+  tm_shape(zona1) + 
+  tm_borders(col = "firebrick4", lwd = 2.5) +
+  tm_fill(alpha = 0.4, col = "firebrick4") + 
+  tm_shape(zona2) + 
+  tm_borders(col = "firebrick3", lwd = 2.5) + 
+  tm_fill(alpha = 0.3, col = "firebrick3") + 
+  tm_shape(zona3) + 
+  tm_borders(col = "firebrick2", lwd = 2.5) + 
+  tm_fill(alpha = 0.2, col = "firebrick2") +
+  tm_shape(zona4) + 
+  tm_borders(col = "firebrick1", lwd = 2.5) + 
+  tm_fill(alpha = 0.1, col = "firebrick1")
+
+tmap_mode("plot")
+```
+
+FIM ----------------------------------------------------------------------------
