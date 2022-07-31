@@ -1,14 +1,10 @@
----
-title: "Plotagem de modo Espacial e 3D"
-output: html_notebook
----
-Material retirado das aulas do MBA em Data Science & Analytics da Esalq/USP. 
-Aluna: Larissa Chacon Finzeto
----
+# Análise Espacial com R
+
+## Plotagem de modo Espacial e 3D
 
 Vamos carregar dados de terremotos na Oceania, do objetos quakes
 
-```{r}
+```
 data(quakes)
 
 quakes %>%
