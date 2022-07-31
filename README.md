@@ -1,0 +1,1 @@
+# analise_espacial_R
