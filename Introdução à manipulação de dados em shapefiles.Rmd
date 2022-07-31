@@ -1,85 +1,157 @@
----
-title: "Introdução à manipulação de dados em shapefiles"
-output: html_notebook
----
+## analise_espacial
+# Introdução à manipulação de dados em shapefiles
+Material retirado da aula de MBA em Data Science & Analytics, Esalq/USP. Aluna: Larissa Chacon Finzeto
 
-Material retirado da aula de MBA em Data Science & Analytics, Esalq/USP.
-Aluna: Larissa Chacon Finzeto
-
----
-
-pacotes <- c("rgdal","raster","tmap","maptools","tidyverse","broom","knitr",
-             "kableExtra","RColorBrewer")
-
-if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
-  instalador <- pacotes[!pacotes %in% installed.packages()]
-  for(i in 1:length(instalador)) {
-    install.packages(instalador, dependencies = T)
-    break()}
-  sapply(pacotes, require, character = T) 
-} else {
-  sapply(pacotes, require, character = T) 
-}
-
-**Introdução à manipulação de dados em shapefiles**
-
-Vamos carregar um shapefile do estado de São Paulo
-
-```{r}
-shp_sp <- readOGR(dsn = "shapefile_sp", layer = "estado_sp")
-```
+Vamos carregar e explorar um shapefile do estado de São Paulo
 
 Características básicas do objeto shp_sp
 
-```{r}
+```
 summary(shp_sp)
 ```
+Object of class SpatialPolygonsDataFrame
+Coordinates:
+        min       max
+x -53.11011 -44.16137
+y -25.31232 -19.77966
+Is projected: FALSE 
+proj4string :
+[+proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs]
+Data attributes:
+  NM_MUNICIP         CD_GEOCMU        
+ Length:645         Length:645        
+ Class :character   Class :character  
+ Mode  :character   Mode  :character  
+ 
+ Classe e tipo do objeto carregado
+ 
+ ```
+ class(shp_sp)
+ typeof(shp_sp)
+ ```
+ 
+[1] "SpatialPolygonsDataFrame"
+attr(,"package")
+[1] "sp"
+[1] "S4"
 
-Classe e tipo do objeto carregado
+Para acessar a base de dados do shapefile, utilizaremos o operador @
 
-```{r}
-class(shp_sp)
-typeof(shp_sp)
 ```
-
-Para acessar a base de dados do shapefile, utilizaremos o operador @:
-
-```{r}
 shp_sp@data
-
-shp_sp@data %>%
-  kable() %>%
-  kable_styling(bootstrap_options = "striped",
-                full_width = TRUE,
-                font_size = 16)
 ```
+[MBA.xlsx](https://github.com/llaricff/analise_espacial/files/9219807/MBA.xlsx)
 
 Para acessar as variáveis da base de dados atrelada ao shapefile, utilizaremos 0 $. Para outros componentes, o operador @. Exemplos:
 
-```{r}
+```
 shp_sp$NM_MUNICIP
 shp_sp$CD_GEOCMU
-
 shp_sp@polygons #Posições geográficas dos polígonos
-shp_sp@plotOrder #Ordem de plotagem
 shp_sp@bbox #Eixo X
 shp_sp@proj4string #Sistema de projeção geográfica do shapefile
-Plotagem básica do shapefile
-
-plot(shp_sp)
 ```
 
-**Manipulação de dados de um shapefile**
+Plotagem básica do shapefile
+
+```
+plot(shp_sp)
+```
+![Rplot](https://user-images.githubusercontent.com/96158594/181757889-ade44ec5-4bad-4b08-8ddd-bf2ade4525b1.png)
+
+## Manipulação de dados de um shapefile
 
 A princípio, vamos calcular a área dos municípios do shp_sp, dos municípios paulistas, utilizando a função area()
 
-```{r}
+```
 raster::area(shp_sp)/100000
 ```
 
+[1]  5511.54860 10653.18042  4876.87793  2649.87213  5738.94270  9195.19227 12389.31330  2335.47434
+  [9]  3573.25578   341.57526  2667.70467  3560.57200  3740.90983  4827.70321  7492.34926 12602.84903
+ [17]  7552.02364  1964.45290  7440.10454  4558.55866  1667.52856  5528.75425  1176.64559  2013.84526
+ [25] 15558.03002  2447.69776  4119.86527  2110.55185  4745.53556  1425.69444   601.25753  4044.62726
+ [33]    36.12162  9667.07994  1596.00372  3130.06587  9289.56129  3185.73782   836.60010  3624.11814
+ [41]  1536.62137   848.79012  1339.12217  1227.84771  2528.75647  4453.22863  3259.52730 10272.87649
+ [49]  7365.57296  1210.75890  1790.03696  9743.21829  1452.04490 11671.33935  2553.27116  2028.28674
+ [57]  2859.07586  1569.01583 10036.22740  6448.30834  2649.04404  5049.73457  3052.27049   859.06695
+ [65]  1326.24234  1780.26449   961.67106   693.73394  4606.09131  4785.20505  4344.98934  5406.88803
+ [73]  3383.70046 12130.55414  1103.71589   916.34601  1498.80921  6164.26338  1531.40998  2052.11910
+ [81]  4444.05100  1501.20463  4056.80833 10076.70292 15661.61268  1460.25493   657.00744  1709.11612
+ [89]  8495.26091  6676.83680  6831.91828  3016.83967  2441.58137  4901.47962  1580.25081  5300.29334
+ [97]  3174.06119  6907.48610  3639.26489  6535.41243  2489.67970  1083.65732  1335.78024  1189.50861
+[105]  1221.09677  5522.56362  3479.88939 14826.41662  5125.83600  1951.75527  1056.88653  2784.58611
+[113] 11013.75056 11959.10946  3269.21019  2664.20429  2399.74175  2602.34259  3689.90724  2879.89707
+[121]  4682.15421  9202.80060  2533.51955   976.42080  1313.85607  4544.35588  1769.29245  6600.87885
+[129]  1850.31071  7945.70587   794.02850  2905.20189  4841.99466 12393.75834   532.61106  5958.10724
+[137]   708.91866   574.58562 16402.28819  1698.90206  3228.78259  4850.97274   345.45770  6392.48226
+[145]  8642.25342  1916.83424  2905.95785  1483.93307  1978.37826  5116.20845  1278.03360  1903.91583
+[153]  1758.46318  1685.89904  4223.03428  7286.48324  1827.92635  4661.19936  1375.79290  2468.25424
+[161]  3038.30203  2786.22807  1546.65115  4416.80334  3239.93883  3114.23409  3852.29926  1493.29820
+[169]  3056.98658  1428.79372 14072.50298  7537.05631   307.32010   881.33299  2237.48508  1497.28447
+[177]  6329.72083   779.38887  2058.74348  2645.56564  1113.76467  5152.58430 16542.55962  2023.59621
+[185]   939.79539   831.28927   703.97881  1556.41123  1099.40559  3892.35356  1936.66601  2962.81366
+[193]  4291.70459  5497.97204  1699.90103  1005.04471   295.64166  2042.35923  5241.37620  2258.86971
+[201]  6056.79305   490.00942  1327.74971  1386.80589  3559.13533  5558.07224  1805.69159  2437.65514
+[209]  4943.76233  6767.54882  2728.01747  2771.53974  2178.10546 12584.65552  3251.26396  4082.92495
+[217]  3621.83153  6415.00519   856.98940  4617.45764  9556.31350  2708.15711  7526.36176  5678.84403
+[225]  2702.89450  1435.76928  3186.74576  4135.66575  2524.77208  3642.51581   655.76942   624.15704
+[233]  5473.92557  3219.47917  4013.81194  2909.77499  2719.12068  2282.29937  6893.90499 10580.81542
+[241]  3623.55180  5949.74099   977.47122  4682.98395  2929.52601 19779.56654  3475.14681  1920.89877
+[249]  3115.45437  1293.66857  2796.06763   871.19196  2095.53389  1702.88969  1900.09638  1360.27835
+[257] 11520.58556  4664.61042  1151.18045  2576.12928 11103.48086 10827.83792  5020.65862  2303.54541
+[265]  6018.44636  1830.14624  1507.42448 17893.50480 18262.58805   826.57974  5184.15685  4064.78452
+[273]  9967.47230  5079.96553  1400.22910   826.21617 10038.59815  2736.66639  3222.76367  9798.17480
+[281]  5646.02545  1611.18299  1389.85950  6407.19099  2008.16062  7046.59114  2734.37839  7066.02241
+[289]  4642.72260  1451.32997  7041.89509  1413.90875  3685.74017  1844.13462   174.49113  5018.69690
+[297]  2075.48757  6871.03049  1419.70693  3742.80279  4154.49064  8601.99696  1281.82872   566.85104
+[305]  4312.07391  8127.99075  5221.69300  2554.72172  3842.73852  5376.73557  1670.67414  4028.70732
+[313]  8095.41381  5807.10949   487.55883  5700.57998  4141.59700  1139.39753   551.32668  3148.10234
+[321]  1895.35543  5982.56616  1665.75793  1551.70992  4752.25954  2245.13571  2480.87264  3275.67001
+[329]  3122.82104  2101.49385  3206.97152  2290.45653  5334.97692  1112.67250  1865.43523 11705.15018
+[337]   778.27278 12535.64235  5248.99310   619.08759  1951.50664  2281.98520  1486.36269  8208.00856
+[345]  2132.42777 10014.84207  2168.25245  9176.91880  2432.27816  1661.24666  8551.56315  7125.40537
+[353]  8127.52951  4977.07627  1336.97528  1043.51816  1418.64801  1103.06120  3469.49974  4955.57997
+[361]  2634.62485  3327.42015  2405.66020 13881.27242  1467.52463  2287.01980  2508.73193  2866.47041
+[369]  8333.71989  3262.54239  2190.49987  4361.59364  1376.09349  2175.15176  3853.74604  1244.73118
+[377]  1833.96407  1602.50265  5317.96297  1177.71935   738.15704   737.87561  9317.42753  3482.64882
+[385]  3010.36360  1989.38467  8025.54725  2429.45893  2186.68234  2473.77504  2917.65110   649.54056
+[393]  2221.30488  2480.38431  2958.19624  2886.48226  3393.74824  6977.00537   821.25434  3187.39820
+[401]  5484.06536 10014.92100  8095.75990  1551.85527 10187.23645  1403.53643  3666.63117  2098.93737
+[409]  3594.13904   847.37410  6028.47980  1387.76562  2561.77757  7379.86252  7287.35106  1585.86564
+[417]  2601.01166  7126.04168  1088.16925  1523.08503  6704.39751  7113.13883  9742.48633  2231.35546
+[425]  3245.48691  2324.87949  7468.67498  6811.23344  7299.97665  1848.24890  1545.29859  1759.96000
+[433]  3855.68089 13780.69235  5045.90606  8237.57733  2158.08853  1084.89030  7271.17940  4024.08896
+[441]  4306.37871  2898.27096  3274.79826   172.63659  1351.19870  7846.74001  1833.99193  3563.71519
+[449]  2095.24722  2175.05426  3159.37823  2656.89248  5566.92499  2449.06671   444.68212  3424.92306
+[457]   630.53502  1673.78239  1470.64708  1751.00202  2866.42024  7792.25318  2056.71638  6513.40874
+[465]  2349.14174  2493.98674  3189.37103  1216.45351 15875.01198  3094.41360  2632.79795  4104.06180
+[473]  7222.02053  2457.45995  3357.52086  4715.53066  6975.00006  1483.31782  2032.08466  3333.63385
+[481]   990.75297  6509.15566  3858.75856  1625.08397  3166.40156  3584.80742  4984.21359  2266.56888
+[489]   363.40789  6318.97759  1306.53983  2364.83734  2428.76451  3052.84532  1479.35231  3085.53800
+[497]  3057.75856  4249.97189  1729.33982   997.38627  1330.56606  2806.97294  1884.19299  3302.68901
+[505]  2726.91405  2710.29932  2722.37675  1834.58256  1501.29999  1480.62317  2953.37367 11147.46063
+[513]  1344.21207  2065.36597   982.91145  3633.31909  1540.32670  2526.20710  1298.88180  1799.49450
+[521]  2097.99875  7541.40535  2885.76538   791.92497  1757.81520  3102.90710  1541.32546 13084.30858
+[529]  1099.55969  1330.08435  1280.26114  2806.74274  2525.79448  4095.32269   153.30727 11369.07091
+[537]   755.79165  5163.98942  1294.62305  1783.96481  4108.62778  2769.51879  5706.85297  4196.84412
+[545]  4319.43919 10994.08861  1864.56036  6173.15428  6507.33472  9303.39217 15211.10077  6112.77817
+[553]  7312.21504  3069.08191  3996.79036  2524.09617  6172.52271  1478.93325  3525.28722  1416.07564
+[561]  1678.48290  2831.43525  1260.46105  2037.36391  4030.88066 10626.99746  1404.59709  4147.81839
+[569]  4490.29404  4503.81798  5947.43814  1534.65253  2062.35809  3305.84097  3457.91735  3686.03651
+[577]   203.87755  1453.31698  1070.58720  1324.59074  5617.87982  7472.18603  7551.00497  2218.91337
+[585]   538.92058  5943.34714  4485.14978  2317.92425  3029.13301  5237.49397  6250.02718  2961.89368
+[593]  2215.40830  4043.95225  1967.89758   713.47726  3152.65062   634.21191  1910.94742  1515.93630
+[601]  1267.30639  6279.86305  1532.35018  1477.97482  2098.35769  7238.83104  2821.79458  2524.33871
+[609]   790.56587  2092.61732  1469.01033  3239.16286  1497.41239  1485.37803  8576.63874  1425.96655
+[617]  2671.78306   424.89400   351.19752  2477.16397   816.04296  2177.26259   954.29012   498.32138
+[625]  1835.16663  4207.02707  3190.53615  1887.26913   741.44161  1189.15286  3476.44486  9642.25925
+[633]  3208.40335  2251.67762  2247.11458  5691.97301  6526.43701  2144.61299  3016.52591  5825.64507
+[641]  2650.28710  4776.73097  5606.36967   944.65398  6072.66510
+
 E em seguida, vamos adicionar essa informação à base de dados
 
-```{r}
+```
 shp_sp@data["area_aproximada"] <- raster::area(shp_sp)/1000000
 
 shp_sp@data %>%
@@ -91,23 +163,13 @@ shp_sp@data %>%
 
 Agora vamos carregar uma base de dados do estado de SP com outras informações e uni-la ao nosso shapefile, por meio da função merge()
 
-```{r}
-load("dados_sp.RData")
 ```
-
-Observar a base de dados carregada
-
-```{r}
-dados_sp %>%
-  kable () %>%
-  kable_styling(bootstrap_options = "striped",
-                full_width = TRUE,
-                font_size = 16)
+load("dados_sp.RData"
 ```
 
 Combinando os dados
 
-```{r}
+```
 shp_sp_dados <- merge(x = shp_sp,
                       y = dados_sp,
                       by.x = "CD_GEOCMU",
@@ -116,7 +178,7 @@ shp_sp_dados <- merge(x = shp_sp,
 
 Vamos plotar os dados utilizando ggplot, ggplot2 e tmap. Primeiro, utilizando o ggplot:
 
-```{r}
+```
 shp_sp_dados@data %>%
   ggplot() +
   geom_histogram(aes(x = idh,),
@@ -127,17 +189,19 @@ shp_sp_dados@data %>%
   theme_bw()
 ```
 
-Em seguida, ggplot2:
+![Rplot01](https://user-images.githubusercontent.com/96158594/181758943-1f07dfd8-9ded-4c25-b177-559d21c42653.png)
 
-```{r}
-#Passo 1: Transformar o shapefile em um objeto do tipo data frame e importar os dados que já estavam no shapefile para o novo objeto data frame 
+Em seguida, ggplot2
+
+```
+Passo 1: Transformar o shapefile em um objeto do tipo data frame e importar os dados que já estavam no shapefile para o novo objeto data frame
 
 shp_dados_df <- tidy(shp_sp_dados, region = "CD_GEOCMU") %>%
   rename(CD_GEOCMU = id) %>%
   left_join(shp_sp_dados@data,
             by = "CD_GEOCMU")
   
-#Passo 2: A plotagem interativa com o pacote plotly
+Passo 2: A plotagem interativa com o pacote plotly
 plotly::ggplotly(
 shp_dados_df %>%
   ggplot() +
@@ -150,10 +214,11 @@ shp_dados_df %>%
   theme_bw()
 )
 ```
+![Rplot02](https://user-images.githubusercontent.com/96158594/181759324-1997263d-15b8-4db4-a947-aeaf8d2a35e4.png)
 
 Por fim, utilizando a tmap:
 
-```{r}
+```
 tm_shape(shp = shp_sp_dados) +
   tm_fill(col = "idh", 
           style = "quantile", 
@@ -170,26 +235,27 @@ tm_shape(shp = shp_sp_dados) +
   tm_borders(alpha = 0.8) +
   tm_compass(type = "8star",
              show.labels = 3)
+ ```
+ ![Rplot03](https://user-images.githubusercontent.com/96158594/181762572-3dcb5c88-9aee-48e6-ae89-1825c5ea6f9d.png)
+
+Agora iremos mudar de shapefile para realizar as funções de ancorar um recorte à alguma base de dados. Vamos supor que queiramos construir um shapefile do Mercosul a partir de shapefiles segregados
+
 ```
-
-Agora iremos mudar de shapefile para realizar as funções de ancorar um recorte à alguma base de dados. Vamos supor que queiramos construir um shapefile do Mercosul a partir de shapefiles segregados.
-
-```{r}
-#Passo 1: Carregar um shapefile de cada vez:
+Passo 1: Carregar um shapefile de cada vez:
 
 shp_argentina <- readOGR(dsn = "shapefile_mercosul", layer = "argentina_shapefile")
 shp_brasil <- readOGR(dsn =  "shapefile_mercosul", layer = "brasil_shapefile")
 shp_paraguai <- readOGR(dsn = "shapefile_mercosul", layer = "paraguai_shapefile")
 shp_venezuela <- readOGR(dsn = "shapefile_mercosul", layer = "venezuela_shapefile")
 
-#Passo 2: Combiná-los com a função bind():
+Passo 2: Combiná-los com a função bind():
 
 shp_mercosul <- bind(shp_argentina,
                      shp_brasil,
                      shp_paraguai,
                      shp_venezuela)
 
-#Passo 3: Observar a base de dados criada e plotar o shapefile criado:
+Passo 3: Observar a base de dados criada e plotar o shapefile criado:
 
 shp_mercosul %>%
   kable () %>%
@@ -203,4 +269,6 @@ tm_shape(shp = shp_mercosul) +
   tm_layout(legend.width = 0.8)
 ```
 
-FIM —————————————————————————-
+![Rplot04](https://user-images.githubusercontent.com/96158594/181763056-d93ebaab-0936-4c93-9b7c-406949433a12.png)
+
+FIM
