@@ -8,7 +8,7 @@ Aluna: Larissa Chacon Finzeto
 
 ---
 
-Objetos do tipo Raster
+# Objetos do tipo Raster
 
 Tratam-se de uma imagem georreferenciada. Vamos carregar um objeto raster do relevo do litoral de São Paulo.
 
