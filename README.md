@@ -38,4 +38,20 @@ E por fim, utilizando os métodos de BUFFER ANALYSIS e KERNEL DENSITIES, podemos
 
 ![Rplot_6](https://user-images.githubusercontent.com/96158594/208255977-0cd62a15-2b92-4216-82b3-c1f3c07648fe.png)
 
+RASTER
+
+Para aprender a lidar com objetos RASTER, vamos fazer uma análise do relevo do litoral paulista. O R nos permite plotagems bem apuradas:
+
+![Rplot_6](https://user-images.githubusercontent.com/96158594/208256528-6cc2c63c-6037-4ca3-a0df-9d1aba3fa908.png)
+
+MODOS DE VISUALIZAÇÃO
+
+Aqui iremos explorar os diversos modos de visualização que o R nos permite. 
+
+CASO R
+
+Este script serve para consolidarmos tudo o que aprendemos. Neste script iremos elaborar um mapa interativo sobre a pobreza em Santa Catarina:
+
+https://user-images.githubusercontent.com/96158594/208256737-342c4994-ce97-4193-9cfc-ff57ba52df5e.mp4
+
 Todos os scripts com detalhamento das atividades estão nesta pasta! Aproveitem!
